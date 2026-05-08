@@ -11,3 +11,4 @@ requests
 aiosqlite
 duckduckgo-search
 ddgs
+langgraph-checkpoint-sqlite
