@@ -44,6 +44,8 @@ def submit_async_task(coro):
 llm = ChatOpenAI(
     model=os.getenv("LANGGRAPH_MODEL", "openai/gpt-4o-mini"),
     base_url=os.getenv("OPENAI_BASE_URL"),
+    api_key=os.getenv("OPENAI_API_KEY"),
+    api_key=os.getenv("OPENAI_API_KEY"),
 )
 search_tool = DuckDuckGoSearchRun(region="us-en")
 
