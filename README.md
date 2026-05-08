@@ -5,12 +5,9 @@ colorFrom: indigo
 colorTo: purple
 sdk: streamlit
 sdk_version: 1.32.0
-app_file: streamlit_frontend.py
+app_file: streamlit_rag_frontend.py
 pinned: false
 ---
-
-
-
 
 # Chatbot in LangGraph
 
