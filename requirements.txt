@@ -1,0 +1,13 @@
+streamlit
+langgraph
+langchain
+langchain-community
+langchain-openai
+langchain-mcp-adapters
+faiss-cpu
+pypdf
+python-dotenv
+requests
+aiosqlite
+duckduckgo-search
+ddgs
