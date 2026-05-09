@@ -1,7 +1,6 @@
 fastapi
 uvicorn
 python-multipart
-streamlit
 langgraph
 langchain
 langchain-community
@@ -11,8 +10,6 @@ sentence-transformers
 faiss-cpu
 pypdf
 python-dotenv
-requests
-aiosqlite
-duckduckgo-search
-langgraph-checkpoint-sqlite
 duckduckgo-search>=6.0.0
+ddgs
+langgraph-checkpoint-sqlite
