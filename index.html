@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notebook AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.2/markdown-it.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:       #05070d;
+  --bg1:      #090c16;
+  --bg2:      #0e1120;
+  --bg3:      #131629;
+  --glass:    rgba(255,255,255,0.035);
+  --glass2:   rgba(255,255,255,0.06);
+  --border:   rgba(255,255,255,0.07);
+  --border2:  rgba(255,255,255,0.12);
+  --accent:   #7c5cfc;
+  --accent2:  #5b3de8;
+  --glow:     rgba(124,92,252,0.18);
+  --glow2:    rgba(124,92,252,0.08);
+  --amber:    #f59e0b;
+  --green:    #10b981;
+  --red:      #ef4444;
+  --text:     #e2e4f0;
+  --muted:    #5a5f7a;
+  --dim:      #2d3050;
+  --r:        10px;
+  --r2:       14px;
+}
+
+html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:15px}
+
+/* ── AMBIENT BG ── */
+.ambient{
+  position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+}
+.ambient::before{
+  content:'';position:absolute;
+  width:800px;height:800px;
+  top:-200px;left:50%;transform:translateX(-50%);
+  background:radial-gradient(circle,rgba(124,92,252,0.12) 0%,transparent 65%);
+  animation:ambientPulse 8s ease-in-out infinite;
+}
+.ambient::after{
+  content:'';position:absolute;
+  width:400px;height:400px;
+  bottom:-100px;right:10%;
+  background:radial-gradient(circle,rgba(59,130,246,0.08) 0%,transparent 65%);
+  animation:ambientPulse 10s ease-in-out infinite 2s;
+}
+@keyframes ambientPulse{0%,100%{opacity:1;transform:translateX(-50%) scale(1)}50%{opacity:0.7;transform:translateX(-50%) scale(1.08)}}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:100vh;position:relative;z-index:1}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:256px;min-width:256px;
+  height:100vh;
+  display:flex;flex-direction:column;
+  background:rgba(9,12,22,0.92);
+  backdrop-filter:blur(24px);
+  border-right:1px solid var(--border);
+  z-index:20;
+}
+
+.sb-head{padding:18px 14px 14px;border-bottom:1px solid var(--border)}
+
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.logo-gem{
+  width:30px;height:30px;
+  background:linear-gradient(135deg,var(--accent) 0%,#3b82f6 100%);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;
+  box-shadow:0 4px 14px rgba(124,92,252,0.4);
+}
+.logo-name{
+  font-size:17px;font-weight:700;letter-spacing:-0.4px;
+  background:linear-gradient(135deg,#e2e4f0 30%,#7c8aaa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+
+.new-btn{
+  width:100%;padding:9px 12px;
+  background:var(--glass2);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  color:var(--text);
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;
+  cursor:pointer;
+  display:flex;align-items:center;gap:8px;
+  transition:all .2s;
+}
+.new-btn svg{opacity:0.6}
+.new-btn:hover{background:rgba(124,92,252,0.12);border-color:rgba(124,92,252,0.3);color:#fff}
+.new-btn:active{transform:scale(0.98)}
+
+/* chat list */
+.sb-list{flex:1;overflow-y:auto;padding:10px 8px}
+
+.sb-label{
+  font-size:10px;font-weight:600;letter-spacing:0.9px;
+  text-transform:uppercase;color:var(--dim);
+  padding:0 6px;margin:8px 0 5px;
+}
+
+.chat-row{
+  display:flex;align-items:center;
+  padding:8px 9px;
+  border-radius:var(--r);
+  cursor:pointer;
+  gap:8px;
+  border:1px solid transparent;
+  transition:all .15s;
+  position:relative;
+}
+.chat-row:hover{background:var(--glass);border-color:var(--border)}
+.chat-row.active{
+  background:var(--glow2);
+  border-color:rgba(124,92,252,0.25);
+}
+.chat-row .icon{font-size:13px;flex-shrink:0;opacity:0.5}
+.chat-row.active .icon{opacity:0.9}
+.chat-row .name{
+  flex:1;font-size:13px;color:var(--muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:color .15s;
+}
+.chat-row:hover .name,.chat-row.active .name{color:var(--text)}
+.chat-row .del-btn{
+  opacity:0;background:none;border:none;
+  color:var(--muted);cursor:pointer;
+  padding:2px 5px;border-radius:5px;
+  font-size:11px;flex-shrink:0;
+  transition:all .15s;
+}
+.chat-row:hover .del-btn{opacity:1}
+.chat-row .del-btn:hover{color:var(--red);background:rgba(239,68,68,0.1)}
+
+/* pdf zone */
+.sb-pdf{padding:10px 12px 16px;border-top:1px solid var(--border)}
+
+.pdf-zone{
+  position:relative;
+  border:1.5px dashed var(--border);
+  border-radius:var(--r);
+  padding:13px;
+  text-align:center;
+  cursor:pointer;
+  transition:all .2s;
+}
+.pdf-zone:hover,.pdf-zone.drag{
+  border-color:var(--accent);
+  background:var(--glow2);
+}
+.pdf-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.pdf-zone-icon{font-size:18px;margin-bottom:4px}
+.pdf-zone-txt{font-size:12px;color:var(--muted)}
+.pdf-zone-sub{font-size:10px;color:var(--dim);margin-top:1px}
+
+.pdf-badge{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 10px;
+  background:rgba(16,185,129,0.07);
+  border:1px solid rgba(16,185,129,0.18);
+  border-radius:var(--r);
+  margin-top:8px;
+}
+.pdf-badge .bi{font-size:13px}
+.pdf-badge .bn{flex:1;font-size:12px;color:var(--green);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pdf-badge .bs{font-size:10px;color:rgba(16,185,129,0.5)}
+
+.pdf-uploading{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 10px;
+  background:var(--glow2);border:1px solid rgba(124,92,252,0.2);
+  border-radius:var(--r);margin-top:8px;
+  font-size:12px;color:#a08aff;
+}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;position:relative}
+
+/* progress line */
+.prog{
+  position:absolute;top:0;left:0;height:2px;
+  background:linear-gradient(90deg,var(--accent),#3b82f6,var(--accent));
+  background-size:200% 100%;
+  transition:width .4s ease;
+  z-index:100;
+  animation:shimmer 2s linear infinite;
+}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+/* header */
+.main-head{
+  padding:14px 22px;
+  border-bottom:1px solid var(--border);
+  background:rgba(5,7,13,0.7);
+  backdrop-filter:blur(16px);
+  display:flex;align-items:center;gap:12px;
+  flex-shrink:0;
+}
+.main-head-info{flex:1}
+.chat-name{font-size:15px;font-weight:600;color:var(--text);letter-spacing:-0.2px}
+.chat-meta{font-size:11px;color:var(--dim);margin-top:1px}
+.feature-tags{display:flex;gap:5px;flex-wrap:wrap}
+.feat{
+  padding:2px 8px;border-radius:20px;
+  font-size:10px;font-weight:500;
+  background:rgba(124,92,252,0.09);
+  border:1px solid rgba(124,92,252,0.18);
+  color:#9c84ff;
+}
+
+/* messages */
+.msgs{flex:1;overflow-y:auto;padding:28px 0 8px}
+.msgs-inner{max-width:740px;margin:0 auto;padding:0 22px}
+
+/* welcome */
+.welcome{
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  min-height:60vh;text-align:center;
+}
+.w-orb{
+  width:64px;height:64px;
+  background:linear-gradient(135deg,var(--accent),#3b82f6);
+  border-radius:20px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;margin-bottom:20px;
+  box-shadow:0 8px 32px rgba(124,92,252,0.35);
+  animation:orbFloat 3s ease-in-out infinite;
+}
+@keyframes orbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.w-title{
+  font-size:26px;font-weight:700;letter-spacing:-0.5px;
+  background:linear-gradient(135deg,#e2e4f0 40%,#7c5cfc);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:8px;
+}
+.w-sub{font-size:13px;color:var(--muted);line-height:1.6;max-width:380px;margin-bottom:28px}
+.cap-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:440px}
+.cap{
+  padding:13px 14px;
+  background:var(--glass);
+  border:1px solid var(--border);
+  border-radius:var(--r2);
+  text-align:left;
+  cursor:pointer;
+  transition:all .2s;
+}
+.cap:hover{background:var(--glass2);border-color:rgba(124,92,252,0.25);transform:translateY(-2px)}
+.cap-ic{font-size:18px;margin-bottom:5px}
+.cap-t{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+.cap-d{font-size:11px;color:var(--muted)}
+
+/* message rows */
+.msg{display:flex;gap:12px;margin-bottom:22px;animation:msgIn .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{flex-direction:row-reverse}
+
+.av{
+  width:32px;height:32px;border-radius:9px;
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-size:14px;
+}
+.av.ai{background:linear-gradient(135deg,var(--accent),#3b82f6);box-shadow:0 3px 12px rgba(124,92,252,0.3)}
+.av.user{background:var(--glass2);border:1px solid var(--border)}
+
+.bbl{
+  max-width:84%;padding:12px 16px;
+  border-radius:var(--r2);
+  font-size:14px;line-height:1.72;
+}
+.bbl.ai{
+  background:var(--glass);border:1px solid var(--border);color:var(--text);
+}
+.bbl.user{
+  background:linear-gradient(135deg,rgba(124,92,252,0.15),rgba(59,130,246,0.1));
+  border:1px solid rgba(124,92,252,0.22);color:var(--text);
+}
+
+/* tool badge */
+.tool-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 13px;
+  background:rgba(245,158,11,0.06);
+  border:1px solid rgba(245,158,11,0.14);
+  border-radius:8px;
+  margin-bottom:14px;
+  font-size:12px;color:#d97706;
+  animation:msgIn .25s ease;
+}
+.tool-bar.done{
+  background:rgba(16,185,129,0.06);
+  border-color:rgba(16,185,129,0.14);
+  color:var(--green);
+}
+.spin{
+  width:11px;height:11px;flex-shrink:0;
+  border:1.5px solid rgba(245,158,11,0.25);
+  border-top-color:#d97706;
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* typing dots */
+.typing{display:flex;gap:4px;align-items:center;padding:2px 0}
+.typing i{
+  width:6px;height:6px;
+  background:var(--muted);border-radius:50%;
+  animation:dot 1.2s infinite ease-in-out;
+}
+.typing i:nth-child(2){animation-delay:.2s}
+.typing i:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,80%,100%{transform:translateY(0);opacity:.3}40%{transform:translateY(-5px);opacity:1}}
+
+/* ── INPUT ── */
+.input-wrap{padding:12px 22px 18px;flex-shrink:0}
+.input-box{
+  max-width:740px;margin:0 auto;
+  background:var(--glass);
+  border:1px solid var(--border);
+  border-radius:var(--r2);
+  display:flex;align-items:flex-end;gap:10px;
+  padding:11px 13px;
+  transition:border-color .2s,box-shadow .2s;
+}
+.input-box:focus-within{
+  border-color:rgba(124,92,252,0.35);
+  box-shadow:0 0 0 3px rgba(124,92,252,0.06);
+}
+textarea.inp{
+  flex:1;background:none;border:none;outline:none;
+  color:var(--text);
+  font-family:'Outfit',sans-serif;font-size:14px;line-height:1.6;
+  resize:none;max-height:180px;min-height:24px;
+}
+textarea.inp::placeholder{color:var(--dim)}
+.send{
+  width:34px;height:34px;flex-shrink:0;
+  background:var(--accent);
+  border:none;border-radius:9px;
+  color:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+  box-shadow:0 3px 12px rgba(124,92,252,0.35);
+}
+.send:hover{background:var(--accent2);transform:scale(1.06)}
+.send:active{transform:scale(0.94)}
+.send:disabled{opacity:0.35;cursor:not-allowed;transform:none;box-shadow:none}
+.inp-foot{
+  max-width:740px;margin:6px auto 0;
+  font-size:11px;color:var(--dim);text-align:center;
+}
+
+/* markdown in bubbles */
+.bbl p{margin-bottom:9px}.bbl p:last-child{margin-bottom:0}
+.bbl pre{background:rgba(0,0,0,0.45);border-radius:8px;padding:12px;margin:8px 0;overflow-x:auto}
+.bbl code{font-family:'JetBrains Mono',monospace;font-size:12.5px}
+.bbl p code{background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:4px;font-size:12px}
+.bbl ul,.bbl ol{padding-left:18px;margin:8px 0}.bbl li{margin-bottom:3px}
+.bbl h1,.bbl h2,.bbl h3{font-weight:600;margin:12px 0 5px;letter-spacing:-0.2px}
+.bbl blockquote{border-left:3px solid var(--accent);padding-left:12px;color:var(--muted);margin:8px 0;font-style:italic}
+.bbl table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px}
+.bbl th,.bbl td{border:1px solid var(--border);padding:6px 10px}
+.bbl th{background:rgba(255,255,255,0.04);font-weight:600}
+.bbl strong{color:#e8eaf6}
+
+/* scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.07);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.14)}
+
+/* toast */
+.toast{
+  position:fixed;bottom:22px;right:22px;z-index:999;
+  padding:9px 15px;
+  background:rgba(14,17,32,0.96);
+  border:1px solid var(--border2);
+  border-radius:var(--r);
+  font-size:13px;color:var(--text);
+  backdrop-filter:blur(20px);
+  animation:slideUp .25s ease;
+  box-shadow:0 4px 20px rgba(0,0,0,0.4);
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+
+<div class="app">
+
+  <!-- ───── SIDEBAR ───── -->
+  <aside class="sidebar">
+    <div class="sb-head">
+      <div class="logo">
+        <div class="logo-gem">📒</div>
+        <span class="logo-name">Notebook AI</span>
+      </div>
+      <button class="new-btn" onclick="newChat()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New conversation
+      </button>
+    </div>
+
+    <div class="sb-list" id="chatList">
+      <div class="sb-label">Conversations</div>
+      <div id="chatItems"></div>
+    </div>
+
+    <div class="sb-pdf">
+      <div class="sb-label" style="margin-bottom:9px">PDF Document</div>
+      <div class="pdf-zone" id="dropZone"
+           ondragover="onDragOver(event)"
+           ondragleave="onDragLeave(event)"
+           ondrop="onDrop(event)">
+        <input type="file" accept=".pdf" id="pdfInput" onchange="uploadPDF(this.files[0])">
+        <div class="pdf-zone-icon">📄</div>
+        <div class="pdf-zone-txt">Drop PDF or click to browse</div>
+        <div class="pdf-zone-sub">Indexes for this conversation</div>
+      </div>
+      <div id="pdfStatus"></div>
+    </div>
+  </aside>
+
+  <!-- ───── MAIN ───── -->
+  <main class="main">
+    <div class="prog" id="prog" style="width:0%"></div>
+
+    <header class="main-head">
+      <div class="main-head-info">
+        <div class="chat-name" id="chatName">New conversation</div>
+        <div class="chat-meta">Powered by LangGraph + OpenRouter</div>
+      </div>
+      <div class="feature-tags">
+        <span class="feat">🔍 Search</span>
+        <span class="feat">🧮 Calc</span>
+        <span class="feat">📈 Stocks</span>
+        <span class="feat">📄 RAG</span>
+      </div>
+    </header>
+
+    <div class="msgs" id="msgs">
+      <div class="msgs-inner" id="msgsInner">
+        <div class="welcome" id="welcome">
+          <div class="w-orb">🤖</div>
+          <div class="w-title">Notebook AI</div>
+          <div class="w-sub">Your intelligent assistant with web search, PDF analysis, stock data, and smart calculations.</div>
+          <div class="cap-grid">
+            <div class="cap" onclick="fillInput('Search for the latest AI news today')">
+              <div class="cap-ic">🔍</div>
+              <div class="cap-t">Web Search</div>
+              <div class="cap-d">Real-time info from the web</div>
+            </div>
+            <div class="cap" onclick="fillInput('What is 18% of 4850?')">
+              <div class="cap-ic">🧮</div>
+              <div class="cap-t">Calculator</div>
+              <div class="cap-d">Complex math & arithmetic</div>
+            </div>
+            <div class="cap" onclick="fillInput('What is the current stock price of AAPL?')">
+              <div class="cap-ic">📈</div>
+              <div class="cap-t">Stock Prices</div>
+              <div class="cap-d">Live market data</div>
+            </div>
+            <div class="cap" onclick="document.getElementById('pdfInput').click()">
+              <div class="cap-ic">📄</div>
+              <div class="cap-t">PDF Analysis</div>
+              <div class="cap-d">Chat with your documents</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-wrap">
+      <div class="input-box">
+        <textarea class="inp" id="chatInput"
+          placeholder="Ask anything…"
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"></textarea>
+        <button class="send" id="sendBtn" onclick="sendMessage()" title="Send">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+      <div class="inp-foot">Notebook AI can make mistakes — always verify important information.</div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ── config ── */
+const API = '';   // same origin as FastAPI
+const md  = window.markdownit({
+  html: false, linkify: true, typographer: true,
+  highlight(str, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try { return `<pre><code class="hljs language-${lang}">${hljs.highlight(str,{language:lang}).value}</code></pre>`; }
+      catch {}
+    }
+    return `<pre><code class="hljs">${md.utils.escapeHtml(str)}</code></pre>`;
+  }
+});
+
+/* ── state ── */
+let currentId  = null;
+let streaming  = false;
+let threads    = [];
+
+/* ── INIT ── */
+async function init() {
+  await loadThreads();
+  if (threads.length) {
+    await selectThread(threads[0].id);
+  } else {
+    await newChat();
+  }
+}
+
+/* ── THREAD LIST ── */
+async function loadThreads() {
+  try {
+    const r = await fetch(`${API}/api/threads`);
+    const d = await r.json();
+    threads = d.threads || [];
+    renderList();
+  } catch { showToast('⚠ Cannot reach server — is it running?'); }
+}
+
+function renderList() {
+  const el = document.getElementById('chatItems');
+  el.innerHTML = '';
+  if (!threads.length) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--dim);padding:6px 6px">No conversations yet.</div>`;
+    return;
+  }
+  threads.forEach(t => {
+    const d = document.createElement('div');
+    d.className = 'chat-row' + (t.id === currentId ? ' active' : '');
+    d.dataset.id = t.id;
+    d.innerHTML = `
+      <span class="icon">💬</span>
+      <span class="name">${esc(t.name || 'New conversation')}</span>
+      ${t.has_document ? '<span style="font-size:10px;opacity:0.45">📄</span>' : ''}
+      <button class="del-btn" onclick="deleteThread('${t.id}',event)" title="Delete">✕</button>`;
+    d.onclick = e => { if (!e.target.classList.contains('del-btn')) selectThread(t.id); };
+    el.appendChild(d);
+  });
+}
+
+function setActive(id) {
+  document.querySelectorAll('.chat-row').forEach(r => {
+    r.classList.toggle('active', r.dataset.id === id);
+  });
+}
+
+/* ── NEW CHAT ── */
+async function newChat() {
+  try {
+    const r = await fetch(`${API}/api/threads`, { method:'POST' });
+    const d = await r.json();
+    currentId = d.id;
+    document.getElementById('chatName').textContent = 'New conversation';
+    clearMessages();
+    showWelcome();
+    clearPDFStatus();
+    await loadThreads();
+  } catch { showToast('Failed to create conversation'); }
+}
+
+/* ── SELECT THREAD ── */
+async function selectThread(id) {
+  currentId = id;
+  setActive(id);
+
+  const t = threads.find(x => x.id === id);
+  document.getElementById('chatName').textContent = t?.name || 'Conversation';
+
+  if (t?.has_document && t?.document) showPDFBadge(t.document);
+  else clearPDFStatus();
+
+  try {
+    const r   = await fetch(`${API}/api/threads/${id}/messages`);
+    const d   = await r.json();
+    const msgs = d.messages || [];
+    clearMessages();
+    if (!msgs.length) { showWelcome(); return; }
+    msgs.forEach(m => appendMsg(m.role, m.content, false));
+    scrollBottom();
+  } catch { showToast('Failed to load messages'); }
+}
+
+/* ── DELETE ── */
+async function deleteThread(id, e) {
+  e.stopPropagation();
+  await fetch(`${API}/api/threads/${id}`, { method:'DELETE' });
+  if (currentId === id) await newChat();
+  else await loadThreads();
+  showToast('Conversation deleted');
+}
+
+/* ── SEND MESSAGE ── */
+async function sendMessage() {
+  const inp  = document.getElementById('chatInput');
+  const text = inp.value.trim();
+  if (!text || streaming) return;
+
+  hideWelcome();
+  inp.value = '';
+  inp.style.height = 'auto';
+  streaming = true;
+  document.getElementById('sendBtn').disabled = true;
+  setProgress(25);
+
+  appendMsg('user', text);
+
+  /* AI bubble with typing dots */
+  const inner = document.getElementById('msgsInner');
+  const aiEl  = document.createElement('div');
+  const aiId  = 'ai-' + Date.now();
+  aiEl.className = 'msg';
+  aiEl.id = aiId;
+  aiEl.innerHTML = `
+    <div class="av ai">🤖</div>
+    <div class="bbl ai"><div class="typing"><i></i><i></i><i></i></div></div>`;
+  inner.appendChild(aiEl);
+  scrollBottom();
+
+  let toolBar   = null;
+  let fullText  = '';
+  let gotFirst  = false;
+
+  try {
+    const res = await fetch(`${API}/api/threads/${currentId}/chat`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ message: text })
+    });
+
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    const bbl     = aiEl.querySelector('.bbl');
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const raw   = decoder.decode(value);
+      const lines = raw.split('\n');
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const ev = JSON.parse(line.slice(6));
+
+          if (ev.type === 'tool') {
+            if (!toolBar) {
+              toolBar = document.createElement('div');
+              toolBar.className = 'tool-bar';
+              inner.insertBefore(toolBar, aiEl);
+            }
+            toolBar.innerHTML = `<div class="spin"></div> Calling <strong>${ev.name}</strong>…`;
+          }
+
+          else if (ev.type === 'text') {
+            if (!gotFirst) { bbl.innerHTML = ''; gotFirst = true; }
+            fullText += ev.content;
+            bbl.innerHTML = md.render(fullText);
+            hljs.highlightAll();
+            setProgress(70);
+          }
+
+          else if (ev.type === 'done') {
+            if (toolBar) {
+              toolBar.className = 'tool-bar done';
+              toolBar.innerHTML = '✓ Tools completed';
+              setTimeout(() => toolBar?.remove(), 2500);
+            }
+            setProgress(100);
+          }
+        } catch {}
+        scrollBottom();
+      }
+    }
+
+    /* refresh name in header + list */
+    await loadThreads();
+    const t = threads.find(x => x.id === currentId);
+    if (t) document.getElementById('chatName').textContent = t.name;
+
+  } catch(err) {
+    aiEl.querySelector('.bbl').innerHTML =
+      `<span style="color:var(--red)">Connection error — make sure the server is running (uvicorn api:app --port 8000).</span>`;
+  }
+
+  streaming = false;
+  document.getElementById('sendBtn').disabled = false;
+  setTimeout(() => setProgress(0), 600);
+  scrollBottom();
+}
+
+/* ── PDF UPLOAD ── */
+async function uploadPDF(file) {
+  if (!file) return;
+  document.getElementById('pdfStatus').innerHTML = `
+    <div class="pdf-uploading">
+      <div class="spin" style="border-color:rgba(124,92,252,.2);border-top-color:var(--accent)"></div>
+      Indexing ${esc(file.name)}…
+    </div>`;
+
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    const r = await fetch(`${API}/api/threads/${currentId}/upload`, { method:'POST', body: fd });
+    const d = await r.json();
+    showPDFBadge(d);
+    showToast(`✓ ${file.name} — ${d.chunks} chunks indexed`);
+    await loadThreads();
+  } catch {
+    document.getElementById('pdfStatus').innerHTML =
+      `<div style="font-size:12px;color:var(--red);margin-top:7px">Upload failed — check server logs</div>`;
+  }
+}
+
+function showPDFBadge(d) {
+  document.getElementById('pdfStatus').innerHTML = `
+    <div class="pdf-badge">
+      <span class="bi">📄</span>
+      <div style="flex:1;min-width:0">
+        <div class="bn">${esc(d.filename || 'Document')}</div>
+        <div class="bs">${d.chunks||0} chunks · ${d.documents||0} pages</div>
+      </div>
+    </div>`;
+}
+
+function clearPDFStatus() {
+  document.getElementById('pdfStatus').innerHTML = '';
+  document.getElementById('pdfInput').value = '';
+}
+
+/* ── DRAG & DROP ── */
+function onDragOver(e)  { e.preventDefault(); document.getElementById('dropZone').classList.add('drag'); }
+function onDragLeave(e) { document.getElementById('dropZone').classList.remove('drag'); }
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag');
+  const f = e.dataTransfer?.files[0];
+  if (f?.type === 'application/pdf') uploadPDF(f);
+}
+
+/* ── HELPERS ── */
+function appendMsg(role, content, animate = true) {
+  hideWelcome();
+  const inner = document.getElementById('msgsInner');
+  const el    = document.createElement('div');
+  el.className = 'msg' + (role === 'user' ? ' user' : '');
+  if (!animate) el.style.animation = 'none';
+  const rendered = role === 'assistant' ? md.render(content) : `<p>${esc(content)}</p>`;
+  el.innerHTML = `
+    <div class="av ${role==='user'?'user':'ai'}">${role==='user'?'👤':'🤖'}</div>
+    <div class="bbl ${role==='user'?'user':'ai'}">${rendered}</div>`;
+  inner.appendChild(el);
+  if (animate) scrollBottom();
+  hljs.highlightAll();
+}
+
+function clearMessages() { document.getElementById('msgsInner').innerHTML = ''; }
+
+function showWelcome() {
+  if (document.getElementById('welcome')) return;
+  document.getElementById('msgsInner').innerHTML = `
+    <div class="welcome" id="welcome">
+      <div class="w-orb">🤖</div>
+      <div class="w-title">Notebook AI</div>
+      <div class="w-sub">Your intelligent assistant with web search, PDF analysis, stock data, and smart calculations.</div>
+      <div class="cap-grid">
+        <div class="cap" onclick="fillInput('Search for the latest AI news today')"><div class="cap-ic">🔍</div><div class="cap-t">Web Search</div><div class="cap-d">Real-time info from the web</div></div>
+        <div class="cap" onclick="fillInput('What is 18% of 4850?')"><div class="cap-ic">🧮</div><div class="cap-t">Calculator</div><div class="cap-d">Complex math & arithmetic</div></div>
+        <div class="cap" onclick="fillInput('What is the current stock price of AAPL?')"><div class="cap-ic">📈</div><div class="cap-t">Stock Prices</div><div class="cap-d">Live market data</div></div>
+        <div class="cap" onclick="document.getElementById('pdfInput').click()"><div class="cap-ic">📄</div><div class="cap-t">PDF Analysis</div><div class="cap-d">Upload & chat with documents</div></div>
+      </div>
+    </div>`;
+}
+
+function hideWelcome() { document.getElementById('welcome')?.remove(); }
+
+function scrollBottom() {
+  const c = document.getElementById('msgs');
+  c.scrollTop = c.scrollHeight;
+}
+
+function setProgress(pct) {
+  document.getElementById('prog').style.width = pct + '%';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+}
+
+function fillInput(text) {
+  const i = document.getElementById('chatInput');
+  i.value = text; i.focus(); autoResize(i);
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg, duration = 3000) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), duration);
+}
+
+/* ── START ── */
+init();
+</script>
+</body>
+</html>
