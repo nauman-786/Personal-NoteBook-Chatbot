@@ -396,6 +396,51 @@ textarea.inp::placeholder{color:var(--dim)}
   box-shadow:0 4px 20px rgba(0,0,0,0.4);
 }
 @keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── MOBILE RESPONSIVENESS ── */
+.menu-btn {
+  display: none;
+  width: 38px;
+  height: 38px;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 15;
+}
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -100%;
+    width: 280px;
+    max-width: 85%;
+    transition: left 0.3s ease;
+    box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+  }
+  .sidebar.active {
+    left: 0;
+  }
+  .main {
+    width: 100%;
+  }
+  .menu-btn {
+    display: flex;
+  }
+  .overlay.active {
+    display: block;
+  }
+}
 </style>
 </head>
 <body>
@@ -441,6 +486,13 @@ textarea.inp::placeholder{color:var(--dim)}
     <div class="prog" id="prog" style="width:0%"></div>
 
     <header class="main-head">
+      <button class="menu-btn" onclick="toggleSidebar()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
       <div class="main-head-info">
         <div class="chat-name" id="chatName">New conversation</div>
         <div class="chat-meta">Powered by LangGraph + OpenRouter</div>
@@ -501,6 +553,8 @@ textarea.inp::placeholder{color:var(--dim)}
       <div class="inp-foot">Notebook AI can make mistakes — always verify important information.</div>
     </div>
   </main>
+  
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 </div>
 
 <script>
@@ -593,6 +647,12 @@ async function selectThread(id) {
 
   if (t?.has_document && t?.document) showPDFBadge(t.document);
   else clearPDFStatus();
+
+  // Close sidebar on mobile after selecting a chat
+  if (window.innerWidth <= 768) {
+    document.querySelector('.sidebar').classList.remove('active');
+    document.getElementById('overlay').classList.remove('active');
+  }
 
   try {
     const r   = await fetch(`${API}/api/threads/${id}/messages`);
@@ -834,6 +894,12 @@ function showToast(msg, duration = 3000) {
   t.className = 'toast'; t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), duration);
+}
+
+/* ── MOBILE TOGGLE LOGIC ── */
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('active');
+  document.getElementById('overlay').classList.toggle('active');
 }
 
 /* ── START ── */
