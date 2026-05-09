@@ -12,3 +12,4 @@ aiosqlite
 duckduckgo-search
 ddgs
 langgraph-checkpoint-sqlite
+langchain-huggingface
