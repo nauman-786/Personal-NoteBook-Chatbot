@@ -60,7 +60,7 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
 .auth-box h2 { font-size: 22px; font-weight: 600; margin-bottom: 5px; color: var(--text); }
 .auth-box p { font-size: 13px; color: var(--muted); margin-bottom: 25px; }
 .auth-box input {
-  width: 100%; padding: 12px 15px; margin-bottom: 20px;
+  width: 100%; padding: 12px 15px; margin-bottom: 12px;
   background: var(--glass2); border: 1px solid var(--border);
   color: var(--text); border-radius: var(--r); outline: none;
   font-family: 'Outfit', sans-serif; font-size: 15px;
@@ -69,11 +69,12 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
 .auth-box input:focus { border-color: var(--accent); background: rgba(124,92,252,0.05); }
 .auth-box button {
   width: 100%; padding: 12px; background: var(--accent);
-  color: white; border: none; border-radius: var(--r);
+  color: white; border: none; border-radius: var(--r); margin-top: 10px;
   cursor: pointer; font-weight: 600; font-size: 15px;
   transition: all 0.2s;
 }
 .auth-box button:hover { background: var(--accent2); transform: translateY(-2px); }
+.auth-box button:disabled { background: var(--muted); cursor: not-allowed; transform: none; }
 
 /* ── AMBIENT BG ── */
 .ambient{
@@ -498,9 +499,10 @@ textarea.inp::placeholder{color:var(--dim)}
   <div class="auth-box">
     <div class="w-orb" style="margin: 0 auto 15px; width: 56px; height: 56px;"><i data-lucide="shield-check" style="width:28px; height:28px;"></i></div>
     <h2>Welcome Back</h2>
-    <p>Please enter your username to access your secure workspace.</p>
-    <input type="text" id="usernameInput" placeholder="Enter username..." onkeydown="if(event.key==='Enter') login()">
-    <button onclick="login()">Access Notebook</button>
+    <p>Please log in or enter a new username to register.</p>
+    <input type="text" id="usernameInput" placeholder="Username">
+    <input type="password" id="passwordInput" placeholder="Password" onkeydown="if(event.key==='Enter') login()">
+    <button id="loginBtn" onclick="login()">Access Notebook</button>
   </div>
 </div>
 
@@ -595,7 +597,7 @@ const API = '';   // same origin as FastAPI
 
 let USER_ID = null;
 
-// Multi-Tenant Auth Logic
+// Multi-Tenant Auth Logic (Now with Password Security)
 function checkAuth() {
   lucide.createIcons();
   const savedUser = localStorage.getItem('notebook_username');
@@ -611,14 +613,41 @@ function checkAuth() {
   }
 }
 
-function login() {
-  const val = document.getElementById('usernameInput').value.trim();
-  if (val) {
-    localStorage.setItem('notebook_username', val);
-    checkAuth();
-  } else {
-    showToast('Please enter a username');
+async function login() {
+  const u = document.getElementById('usernameInput').value.trim();
+  const p = document.getElementById('passwordInput').value.trim();
+  
+  if (!u || !p) {
+    showToast('Please enter both username and password.');
+    return;
   }
+
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = 'Verifying...';
+
+  try {
+    const r = await fetch(`${API}/api/auth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+
+    const d = await r.json();
+
+    if (r.ok) {
+      localStorage.setItem('notebook_username', u);
+      showToast(d.message);
+      checkAuth();
+    } else {
+      showToast(d.detail || 'Authentication failed');
+    }
+  } catch (error) {
+    showToast('Server error. Is the backend running?');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Access Notebook';
 }
 
 function logout() {
@@ -656,7 +685,7 @@ async function initApp() {
 async function loadThreads() {
   try {
     const r = await fetch(`${API}/api/threads`, {
-      headers: { 'X-User-ID': USER_ID } // Bind API call to current user
+      headers: { 'X-User-ID': USER_ID }
     });
     const d = await r.json();
     threads = d.threads || [];
@@ -697,7 +726,7 @@ async function newChat() {
   try {
     const r = await fetch(`${API}/api/threads`, { 
       method:'POST',
-      headers: { 'X-User-ID': USER_ID } // Secure creation
+      headers: { 'X-User-ID': USER_ID }
     });
     const d = await r.json();
     currentId = d.id;
