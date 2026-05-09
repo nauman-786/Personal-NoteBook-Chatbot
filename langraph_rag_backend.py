@@ -46,7 +46,7 @@ def ingest_pdf(file_bytes: bytes, thread_id: str, filename: Optional[str] = None
         raise ValueError("No bytes received for ingestion.")
 
     try:
-        # FIX: Read the PDF directly from memory to bypass Hugging Face disk restrictions
+        # Read the PDF directly from memory to bypass Hugging Face disk restrictions
         pdf_stream = io.BytesIO(file_bytes)
         pdf_reader = PdfReader(pdf_stream)
 
@@ -155,19 +155,37 @@ def chat_node(state: ChatState, config=None):
     if config and isinstance(config, dict):
         thread_id = config.get("configurable", {}).get("thread_id")
 
+    # FIX 1: Dynamically check if a document is currently loaded for this chat
+    has_doc = thread_id and str(thread_id) in _THREAD_RETRIEVERS
+    doc_info = _THREAD_METADATA.get(str(thread_id), {})
+    
+    # Inject state-awareness into the AI's prompt so it knows the file is there
+    if has_doc:
+        filename = doc_info.get("filename", "the document")
+        doc_context = (
+            f"CRITICAL STATE: The user has uploaded a document named '{filename}'. "
+            f"You MUST use the `rag_tool` with thread_id `{thread_id}` to search its contents "
+            "before answering any questions about it."
+        )
+    else:
+        doc_context = "No document is currently uploaded. If the user asks to check a document, ask them to upload it."
+
     system_message = SystemMessage(
         content=(
-            "You are a helpful assistant. For questions about the uploaded PDF, call "
-            "the `rag_tool` and include the thread_id "
-            f"`{thread_id}`. You can also use web search, stock price, and calculator tools when helpful."
+            f"You are a helpful assistant.\n{doc_context}\n"
+            "You can also use web search, stock price, and calculator tools when helpful."
         )
     )
+    
     messages = [system_message, *state["messages"]]
     response = llm_with_tools.invoke(messages, config=config)
     return {"messages": [response]}
 
 
-conn = sqlite3.connect(database="chatbot.db", check_same_thread=False)
+# FIX 2: Smart Persistence. 
+# If HF persistent storage is enabled, it uses it. Otherwise, it safely defaults to local.
+DB_PATH = "/data/chatbot.db" if os.path.exists("/data") else "chatbot.db"
+conn = sqlite3.connect(database=DB_PATH, check_same_thread=False)
 checkpointer = SqliteSaver(conn=conn)
 
 graph = StateGraph(ChatState)
