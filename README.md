@@ -1,13 +1,14 @@
 ---
 title: Personal Notebook Chatbot
-emoji: 🤖
-colorFrom: indigo
-colorTo: purple
-sdk: streamlit
-sdk_version: 1.32.0
-app_file: streamlit_rag_frontend.py
+emoji: 📓
+colorFrom: blue
+colorTo: indigo
+sdk: docker
 pinned: false
 ---
+
+# Personal Notebook Chatbot
+My custom Notebook AI deployment.
 
 # Chatbot in LangGraph
 
