@@ -6,9 +6,13 @@
 <title>Notebook AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Markdown & HighlightJS -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/13.0.2/markdown-it.min.js"></script>
+<!-- Professional Icons (Lucide) -->
+<script src="https://unpkg.com/lucide@latest"></script>
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -36,6 +40,40 @@
 }
 
 html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font-size:15px}
+
+/* Global Icon Styling */
+.lucide { width: 1.2em; height: 1.2em; stroke-width: 2px; }
+
+/* ── LOGIN OVERLAY ── */
+.auth-overlay {
+  position: fixed; inset: 0; background: var(--bg); z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(10px);
+}
+.auth-box {
+  background: rgba(9,12,22,0.9); border: 1px solid var(--border2);
+  padding: 40px 30px; border-radius: 20px; text-align: center;
+  width: 100%; max-width: 360px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  animation: slideUp 0.4s ease;
+}
+.auth-box h2 { font-size: 22px; font-weight: 600; margin-bottom: 5px; color: var(--text); }
+.auth-box p { font-size: 13px; color: var(--muted); margin-bottom: 25px; }
+.auth-box input {
+  width: 100%; padding: 12px 15px; margin-bottom: 20px;
+  background: var(--glass2); border: 1px solid var(--border);
+  color: var(--text); border-radius: var(--r); outline: none;
+  font-family: 'Outfit', sans-serif; font-size: 15px;
+  transition: all 0.2s;
+}
+.auth-box input:focus { border-color: var(--accent); background: rgba(124,92,252,0.05); }
+.auth-box button {
+  width: 100%; padding: 12px; background: var(--accent);
+  color: white; border: none; border-radius: var(--r);
+  cursor: pointer; font-weight: 600; font-size: 15px;
+  transition: all 0.2s;
+}
+.auth-box button:hover { background: var(--accent2); transform: translateY(-2px); }
 
 /* ── AMBIENT BG ── */
 .ambient{
@@ -79,7 +117,7 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
   background:linear-gradient(135deg,var(--accent) 0%,#3b82f6 100%);
   border-radius:8px;
   display:flex;align-items:center;justify-content:center;
-  font-size:15px;
+  color: white;
   box-shadow:0 4px 14px rgba(124,92,252,0.4);
 }
 .logo-name{
@@ -99,8 +137,9 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
   display:flex;align-items:center;gap:8px;
   transition:all .2s;
 }
-.new-btn svg{opacity:0.6}
+.new-btn .lucide{opacity:0.6; width: 16px; height: 16px;}
 .new-btn:hover{background:rgba(124,92,252,0.12);border-color:rgba(124,92,252,0.3);color:#fff}
+.new-btn:hover .lucide{opacity:1; color: var(--accent);}
 .new-btn:active{transform:scale(0.98)}
 
 /* chat list */
@@ -127,8 +166,8 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
   background:var(--glow2);
   border-color:rgba(124,92,252,0.25);
 }
-.chat-row .icon{font-size:13px;flex-shrink:0;opacity:0.5}
-.chat-row.active .icon{opacity:0.9}
+.chat-row .icon{color:var(--muted); flex-shrink:0; width: 14px; height: 14px;}
+.chat-row.active .icon{color:var(--accent);}
 .chat-row .name{
   flex:1;font-size:13px;color:var(--muted);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
@@ -138,33 +177,36 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
 .chat-row .del-btn{
   opacity:0;background:none;border:none;
   color:var(--muted);cursor:pointer;
-  padding:2px 5px;border-radius:5px;
-  font-size:11px;flex-shrink:0;
+  padding:4px;border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
   transition:all .15s;
 }
 .chat-row:hover .del-btn{opacity:1}
 .chat-row .del-btn:hover{color:var(--red);background:rgba(239,68,68,0.1)}
+.chat-row .del-btn .lucide{width: 14px; height: 14px;}
 
-/* pdf zone */
+/* pdf zone & user profile */
 .sb-pdf{padding:10px 12px 16px;border-top:1px solid var(--border)}
 
 .pdf-zone{
   position:relative;
   border:1.5px dashed var(--border);
   border-radius:var(--r);
-  padding:13px;
+  padding:15px;
   text-align:center;
   cursor:pointer;
   transition:all .2s;
+  margin-bottom: 15px;
 }
 .pdf-zone:hover,.pdf-zone.drag{
   border-color:var(--accent);
   background:var(--glow2);
 }
 .pdf-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
-.pdf-zone-icon{font-size:18px;margin-bottom:4px}
+.pdf-zone-icon{color:var(--muted); margin-bottom:6px; display:flex; justify-content:center;}
+.pdf-zone:hover .pdf-zone-icon{color:var(--accent);}
 .pdf-zone-txt{font-size:12px;color:var(--muted)}
-.pdf-zone-sub{font-size:10px;color:var(--dim);margin-top:1px}
+.pdf-zone-sub{font-size:10px;color:var(--dim);margin-top:2px}
 
 .pdf-badge{
   display:flex;align-items:center;gap:8px;
@@ -172,9 +214,9 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
   background:rgba(16,185,129,0.07);
   border:1px solid rgba(16,185,129,0.18);
   border-radius:var(--r);
-  margin-top:8px;
+  margin-bottom:15px;
 }
-.pdf-badge .bi{font-size:13px}
+.pdf-badge .bi{color:var(--green); width: 16px; height: 16px;}
 .pdf-badge .bn{flex:1;font-size:12px;color:var(--green);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pdf-badge .bs{font-size:10px;color:rgba(16,185,129,0.5)}
 
@@ -182,7 +224,7 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
   display:flex;align-items:center;gap:8px;
   padding:9px 10px;
   background:var(--glow2);border:1px solid rgba(124,92,252,0.2);
-  border-radius:var(--r);margin-top:8px;
+  border-radius:var(--r);margin-bottom:15px;
   font-size:12px;color:#a08aff;
 }
 
@@ -214,12 +256,14 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
 .chat-meta{font-size:11px;color:var(--dim);margin-top:1px}
 .feature-tags{display:flex;gap:5px;flex-wrap:wrap}
 .feat{
-  padding:2px 8px;border-radius:20px;
+  display:flex;align-items:center;gap:4px;
+  padding:3px 8px;border-radius:20px;
   font-size:10px;font-weight:500;
   background:rgba(124,92,252,0.09);
   border:1px solid rgba(124,92,252,0.18);
   color:#9c84ff;
 }
+.feat .lucide {width: 10px; height: 10px;}
 
 /* messages */
 .msgs{flex:1;overflow-y:auto;padding:28px 0 8px}
@@ -236,10 +280,12 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
   background:linear-gradient(135deg,var(--accent),#3b82f6);
   border-radius:20px;
   display:flex;align-items:center;justify-content:center;
-  font-size:28px;margin-bottom:20px;
+  color: white;
+  margin-bottom:20px;
   box-shadow:0 8px 32px rgba(124,92,252,0.35);
   animation:orbFloat 3s ease-in-out infinite;
 }
+.w-orb .lucide {width: 34px; height: 34px; stroke-width: 1.5px;}
 @keyframes orbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 .w-title{
   font-size:26px;font-weight:700;letter-spacing:-0.5px;
@@ -259,7 +305,8 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
   transition:all .2s;
 }
 .cap:hover{background:var(--glass2);border-color:rgba(124,92,252,0.25);transform:translateY(-2px)}
-.cap-ic{font-size:18px;margin-bottom:5px}
+.cap-ic{color:var(--muted); margin-bottom:6px;}
+.cap:hover .cap-ic{color:var(--accent);}
 .cap-t{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
 .cap-d{font-size:11px;color:var(--muted)}
 
@@ -271,10 +318,11 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
 .av{
   width:32px;height:32px;border-radius:9px;
   flex-shrink:0;display:flex;align-items:center;justify-content:center;
-  font-size:14px;
+  color: white;
 }
+.av .lucide { width: 18px; height: 18px; }
 .av.ai{background:linear-gradient(135deg,var(--accent),#3b82f6);box-shadow:0 3px 12px rgba(124,92,252,0.3)}
-.av.user{background:var(--glass2);border:1px solid var(--border)}
+.av.user{background:var(--glass2);border:1px solid var(--border); color:var(--text);}
 
 .bbl{
   max-width:84%;padding:12px 16px;
@@ -316,14 +364,13 @@ html,body{height:100%;overflow:hidden;font-family:'Outfit',sans-serif;background
 
 /* typing dots */
 .typing{display:flex;gap:4px;align-items:center;padding:2px 0}
-.typing i{
+.typing i.dot{
   width:6px;height:6px;
   background:var(--muted);border-radius:50%;
   animation:dot 1.2s infinite ease-in-out;
 }
-.typing i:nth-child(2){animation-delay:.2s}
-.typing i:nth-child(3){animation-delay:.4s}
-@keyframes dot{0%,80%,100%{transform:translateY(0);opacity:.3}40%{transform:translateY(-5px);opacity:1}}
+.typing i.dot:nth-child(2){animation-delay:.2s}
+.typing i.dot:nth-child(3){animation-delay:.4s}
 
 /* ── INPUT ── */
 .input-wrap{padding:12px 22px 18px;flex-shrink:0}
@@ -359,6 +406,7 @@ textarea.inp::placeholder{color:var(--dim)}
 .send:hover{background:var(--accent2);transform:scale(1.06)}
 .send:active{transform:scale(0.94)}
 .send:disabled{opacity:0.35;cursor:not-allowed;transform:none;box-shadow:none}
+.send .lucide {width: 16px; height: 16px; margin-left: 2px;}
 .inp-foot{
   max-width:740px;margin:6px auto 0;
   font-size:11px;color:var(--dim);text-align:center;
@@ -395,7 +443,6 @@ textarea.inp::placeholder{color:var(--dim)}
   animation:slideUp .25s ease;
   box-shadow:0 4px 20px rgba(0,0,0,0.4);
 }
-@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 /* ── MOBILE RESPONSIVENESS ── */
 .menu-btn {
@@ -446,17 +493,28 @@ textarea.inp::placeholder{color:var(--dim)}
 <body>
 <div class="ambient"></div>
 
-<div class="app">
+<!-- ───── LOGIN SCREEN ───── -->
+<div class="auth-overlay" id="authOverlay" style="display: none;">
+  <div class="auth-box">
+    <div class="w-orb" style="margin: 0 auto 15px; width: 56px; height: 56px;"><i data-lucide="shield-check" style="width:28px; height:28px;"></i></div>
+    <h2>Welcome Back</h2>
+    <p>Please enter your username to access your secure workspace.</p>
+    <input type="text" id="usernameInput" placeholder="Enter username..." onkeydown="if(event.key==='Enter') login()">
+    <button onclick="login()">Access Notebook</button>
+  </div>
+</div>
+
+<div class="app" id="mainApp" style="display: none;">
 
   <!-- ───── SIDEBAR ───── -->
   <aside class="sidebar">
     <div class="sb-head">
       <div class="logo">
-        <div class="logo-gem">📒</div>
+        <div class="logo-gem"><i data-lucide="cpu"></i></div>
         <span class="logo-name">Notebook AI</span>
       </div>
       <button class="new-btn" onclick="newChat()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <i data-lucide="plus"></i>
         New conversation
       </button>
     </div>
@@ -471,13 +529,19 @@ textarea.inp::placeholder{color:var(--dim)}
       <div class="pdf-zone" id="dropZone"
            ondragover="onDragOver(event)"
            ondragleave="onDragLeave(event)"
-           ondrop="onDrop(event)">
+           ondrop="onDrop(event)"
+           onclick="document.getElementById('pdfInput').click()">
         <input type="file" accept=".pdf" id="pdfInput" onchange="uploadPDF(this.files[0])">
-        <div class="pdf-zone-icon">📄</div>
+        <div class="pdf-zone-icon"><i data-lucide="file-up" style="width: 28px; height: 28px; stroke-width: 1.5px;"></i></div>
         <div class="pdf-zone-txt">Drop PDF or click to browse</div>
         <div class="pdf-zone-sub">Indexes for this conversation</div>
       </div>
       <div id="pdfStatus"></div>
+      
+      <!-- User Logout Button -->
+      <button class="new-btn" style="justify-content: center; background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color: #fca5a5;" onclick="logout()">
+        <i data-lucide="log-out"></i> Log Out (<span id="displayUser">User</span>)
+      </button>
     </div>
   </aside>
 
@@ -487,53 +551,23 @@ textarea.inp::placeholder{color:var(--dim)}
 
     <header class="main-head">
       <button class="menu-btn" onclick="toggleSidebar()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
+        <i data-lucide="menu"></i>
       </button>
       <div class="main-head-info">
         <div class="chat-name" id="chatName">New conversation</div>
         <div class="chat-meta">Powered by LangGraph + OpenRouter</div>
       </div>
       <div class="feature-tags">
-        <span class="feat">🔍 Search</span>
-        <span class="feat">🧮 Calc</span>
-        <span class="feat">📈 Stocks</span>
-        <span class="feat">📄 RAG</span>
+        <span class="feat"><i data-lucide="search"></i> Search</span>
+        <span class="feat"><i data-lucide="calculator"></i> Calc</span>
+        <span class="feat"><i data-lucide="trending-up"></i> Stocks</span>
+        <span class="feat"><i data-lucide="file-text"></i> RAG</span>
       </div>
     </header>
 
     <div class="msgs" id="msgs">
       <div class="msgs-inner" id="msgsInner">
-        <div class="welcome" id="welcome">
-          <div class="w-orb">🤖</div>
-          <div class="w-title">Notebook AI</div>
-          <div class="w-sub">Your intelligent assistant with web search, PDF analysis, stock data, and smart calculations.</div>
-          <div class="cap-grid">
-            <div class="cap" onclick="fillInput('Search for the latest AI news today')">
-              <div class="cap-ic">🔍</div>
-              <div class="cap-t">Web Search</div>
-              <div class="cap-d">Real-time info from the web</div>
-            </div>
-            <div class="cap" onclick="fillInput('What is 18% of 4850?')">
-              <div class="cap-ic">🧮</div>
-              <div class="cap-t">Calculator</div>
-              <div class="cap-d">Complex math & arithmetic</div>
-            </div>
-            <div class="cap" onclick="fillInput('What is the current stock price of AAPL?')">
-              <div class="cap-ic">📈</div>
-              <div class="cap-t">Stock Prices</div>
-              <div class="cap-d">Live market data</div>
-            </div>
-            <div class="cap" onclick="document.getElementById('pdfInput').click()">
-              <div class="cap-ic">📄</div>
-              <div class="cap-t">PDF Analysis</div>
-              <div class="cap-d">Chat with your documents</div>
-            </div>
-          </div>
-        </div>
+        <!-- dynamic content goes here -->
       </div>
     </div>
 
@@ -545,9 +579,7 @@ textarea.inp::placeholder{color:var(--dim)}
           onkeydown="handleKey(event)"
           oninput="autoResize(this)"></textarea>
         <button class="send" id="sendBtn" onclick="sendMessage()" title="Send">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-          </svg>
+          <i data-lucide="send"></i>
         </button>
       </div>
       <div class="inp-foot">Notebook AI can make mistakes — always verify important information.</div>
@@ -558,8 +590,42 @@ textarea.inp::placeholder{color:var(--dim)}
 </div>
 
 <script>
-/* ── config ── */
+/* ── config & security ── */
 const API = '';   // same origin as FastAPI
+
+let USER_ID = null;
+
+// Multi-Tenant Auth Logic
+function checkAuth() {
+  lucide.createIcons();
+  const savedUser = localStorage.getItem('notebook_username');
+  if (!savedUser) {
+    document.getElementById('authOverlay').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+  } else {
+    USER_ID = savedUser;
+    document.getElementById('displayUser').textContent = USER_ID;
+    document.getElementById('authOverlay').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'flex';
+    initApp();
+  }
+}
+
+function login() {
+  const val = document.getElementById('usernameInput').value.trim();
+  if (val) {
+    localStorage.setItem('notebook_username', val);
+    checkAuth();
+  } else {
+    showToast('Please enter a username');
+  }
+}
+
+function logout() {
+  localStorage.removeItem('notebook_username');
+  location.reload();
+}
+
 const md  = window.markdownit({
   html: false, linkify: true, typographer: true,
   highlight(str, lang) {
@@ -577,7 +643,7 @@ let streaming  = false;
 let threads    = [];
 
 /* ── INIT ── */
-async function init() {
+async function initApp() {
   await loadThreads();
   if (threads.length) {
     await selectThread(threads[0].id);
@@ -589,7 +655,9 @@ async function init() {
 /* ── THREAD LIST ── */
 async function loadThreads() {
   try {
-    const r = await fetch(`${API}/api/threads`);
+    const r = await fetch(`${API}/api/threads`, {
+      headers: { 'X-User-ID': USER_ID } // Bind API call to current user
+    });
     const d = await r.json();
     threads = d.threads || [];
     renderList();
@@ -608,13 +676,14 @@ function renderList() {
     d.className = 'chat-row' + (t.id === currentId ? ' active' : '');
     d.dataset.id = t.id;
     d.innerHTML = `
-      <span class="icon">💬</span>
+      <i data-lucide="message-square" class="icon"></i>
       <span class="name">${esc(t.name || 'New conversation')}</span>
-      ${t.has_document ? '<span style="font-size:10px;opacity:0.45">📄</span>' : ''}
-      <button class="del-btn" onclick="deleteThread('${t.id}',event)" title="Delete">✕</button>`;
-    d.onclick = e => { if (!e.target.classList.contains('del-btn')) selectThread(t.id); };
+      ${t.has_document ? '<i data-lucide="file-text" style="width:12px; height:12px; opacity:0.5;"></i>' : ''}
+      <button class="del-btn" onclick="deleteThread('${t.id}',event)" title="Delete"><i data-lucide="trash-2"></i></button>`;
+    d.onclick = e => { if (!e.target.closest('.del-btn')) selectThread(t.id); };
     el.appendChild(d);
   });
+  lucide.createIcons();
 }
 
 function setActive(id) {
@@ -626,7 +695,10 @@ function setActive(id) {
 /* ── NEW CHAT ── */
 async function newChat() {
   try {
-    const r = await fetch(`${API}/api/threads`, { method:'POST' });
+    const r = await fetch(`${API}/api/threads`, { 
+      method:'POST',
+      headers: { 'X-User-ID': USER_ID } // Secure creation
+    });
     const d = await r.json();
     currentId = d.id;
     document.getElementById('chatName').textContent = 'New conversation';
@@ -648,14 +720,15 @@ async function selectThread(id) {
   if (t?.has_document && t?.document) showPDFBadge(t.document);
   else clearPDFStatus();
 
-  // Close sidebar on mobile after selecting a chat
   if (window.innerWidth <= 768) {
     document.querySelector('.sidebar').classList.remove('active');
     document.getElementById('overlay').classList.remove('active');
   }
 
   try {
-    const r   = await fetch(`${API}/api/threads/${id}/messages`);
+    const r   = await fetch(`${API}/api/threads/${id}/messages`, {
+      headers: { 'X-User-ID': USER_ID }
+    });
     const d   = await r.json();
     const msgs = d.messages || [];
     clearMessages();
@@ -668,7 +741,10 @@ async function selectThread(id) {
 /* ── DELETE ── */
 async function deleteThread(id, e) {
   e.stopPropagation();
-  await fetch(`${API}/api/threads/${id}`, { method:'DELETE' });
+  await fetch(`${API}/api/threads/${id}`, { 
+    method:'DELETE',
+    headers: { 'X-User-ID': USER_ID }
+  });
   if (currentId === id) await newChat();
   else await loadThreads();
   showToast('Conversation deleted');
@@ -689,16 +765,16 @@ async function sendMessage() {
 
   appendMsg('user', text);
 
-  /* AI bubble with typing dots */
   const inner = document.getElementById('msgsInner');
   const aiEl  = document.createElement('div');
   const aiId  = 'ai-' + Date.now();
   aiEl.className = 'msg';
   aiEl.id = aiId;
   aiEl.innerHTML = `
-    <div class="av ai">🤖</div>
-    <div class="bbl ai"><div class="typing"><i></i><i></i><i></i></div></div>`;
+    <div class="av ai"><i data-lucide="bot"></i></div>
+    <div class="bbl ai"><div class="typing"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div></div>`;
   inner.appendChild(aiEl);
+  lucide.createIcons();
   scrollBottom();
 
   let toolBar   = null;
@@ -708,7 +784,10 @@ async function sendMessage() {
   try {
     const res = await fetch(`${API}/api/threads/${currentId}/chat`, {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{
+        'Content-Type':'application/json',
+        'X-User-ID': USER_ID
+      },
       body: JSON.stringify({ message: text })
     });
 
@@ -758,14 +837,13 @@ async function sendMessage() {
       }
     }
 
-    /* refresh name in header + list */
     await loadThreads();
     const t = threads.find(x => x.id === currentId);
     if (t) document.getElementById('chatName').textContent = t.name;
 
   } catch(err) {
     aiEl.querySelector('.bbl').innerHTML =
-      `<span style="color:var(--red)">Connection error — make sure the server is running (uvicorn api:app --port 8000).</span>`;
+      `<span style="color:var(--red)">Connection error — make sure the server is running.</span>`;
   }
 
   streaming = false;
@@ -787,7 +865,11 @@ async function uploadPDF(file) {
   fd.append('file', file);
 
   try {
-    const r = await fetch(`${API}/api/threads/${currentId}/upload`, { method:'POST', body: fd });
+    const r = await fetch(`${API}/api/threads/${currentId}/upload`, { 
+      method:'POST', 
+      headers: { 'X-User-ID': USER_ID },
+      body: fd 
+    });
     const d = await r.json();
     showPDFBadge(d);
     showToast(`✓ ${file.name} — ${d.chunks} chunks indexed`);
@@ -801,12 +883,13 @@ async function uploadPDF(file) {
 function showPDFBadge(d) {
   document.getElementById('pdfStatus').innerHTML = `
     <div class="pdf-badge">
-      <span class="bi">📄</span>
+      <i data-lucide="file-check-2" class="bi"></i>
       <div style="flex:1;min-width:0">
         <div class="bn">${esc(d.filename || 'Document')}</div>
         <div class="bs">${d.chunks||0} chunks · ${d.documents||0} pages</div>
       </div>
     </div>`;
+  lucide.createIcons();
 }
 
 function clearPDFStatus() {
@@ -833,9 +916,10 @@ function appendMsg(role, content, animate = true) {
   if (!animate) el.style.animation = 'none';
   const rendered = role === 'assistant' ? md.render(content) : `<p>${esc(content)}</p>`;
   el.innerHTML = `
-    <div class="av ${role==='user'?'user':'ai'}">${role==='user'?'👤':'🤖'}</div>
+    <div class="av ${role==='user'?'user':'ai'}"><i data-lucide="${role==='user'?'user':'bot'}"></i></div>
     <div class="bbl ${role==='user'?'user':'ai'}">${rendered}</div>`;
   inner.appendChild(el);
+  lucide.createIcons();
   if (animate) scrollBottom();
   hljs.highlightAll();
 }
@@ -846,16 +930,33 @@ function showWelcome() {
   if (document.getElementById('welcome')) return;
   document.getElementById('msgsInner').innerHTML = `
     <div class="welcome" id="welcome">
-      <div class="w-orb">🤖</div>
+      <div class="w-orb"><i data-lucide="bot"></i></div>
       <div class="w-title">Notebook AI</div>
       <div class="w-sub">Your intelligent assistant with web search, PDF analysis, stock data, and smart calculations.</div>
       <div class="cap-grid">
-        <div class="cap" onclick="fillInput('Search for the latest AI news today')"><div class="cap-ic">🔍</div><div class="cap-t">Web Search</div><div class="cap-d">Real-time info from the web</div></div>
-        <div class="cap" onclick="fillInput('What is 18% of 4850?')"><div class="cap-ic">🧮</div><div class="cap-t">Calculator</div><div class="cap-d">Complex math & arithmetic</div></div>
-        <div class="cap" onclick="fillInput('What is the current stock price of AAPL?')"><div class="cap-ic">📈</div><div class="cap-t">Stock Prices</div><div class="cap-d">Live market data</div></div>
-        <div class="cap" onclick="document.getElementById('pdfInput').click()"><div class="cap-ic">📄</div><div class="cap-t">PDF Analysis</div><div class="cap-d">Upload & chat with documents</div></div>
+        <div class="cap" onclick="fillInput('Search for the latest AI news today')">
+          <div class="cap-ic"><i data-lucide="search"></i></div>
+          <div class="cap-t">Web Search</div>
+          <div class="cap-d">Real-time info from the web</div>
+        </div>
+        <div class="cap" onclick="fillInput('What is 18% of 4850?')">
+          <div class="cap-ic"><i data-lucide="calculator"></i></div>
+          <div class="cap-t">Calculator</div>
+          <div class="cap-d">Complex math & arithmetic</div>
+        </div>
+        <div class="cap" onclick="fillInput('What is the current stock price of AAPL?')">
+          <div class="cap-ic"><i data-lucide="trending-up"></i></div>
+          <div class="cap-t">Stock Prices</div>
+          <div class="cap-d">Live market data</div>
+        </div>
+        <div class="cap" onclick="document.getElementById('pdfInput').click()">
+          <div class="cap-ic"><i data-lucide="file-text"></i></div>
+          <div class="cap-t">PDF Analysis</div>
+          <div class="cap-d">Chat with your documents</div>
+        </div>
       </div>
     </div>`;
+  lucide.createIcons();
 }
 
 function hideWelcome() { document.getElementById('welcome')?.remove(); }
@@ -896,14 +997,13 @@ function showToast(msg, duration = 3000) {
   setTimeout(() => t.remove(), duration);
 }
 
-/* ── MOBILE TOGGLE LOGIC ── */
 function toggleSidebar() {
   document.querySelector('.sidebar').classList.toggle('active');
   document.getElementById('overlay').classList.toggle('active');
 }
 
 /* ── START ── */
-init();
+window.onload = checkAuth;
 </script>
 </body>
 </html>
