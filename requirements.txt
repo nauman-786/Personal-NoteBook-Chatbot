@@ -13,3 +13,4 @@ duckduckgo-search
 ddgs
 langgraph-checkpoint-sqlite
 langchain-huggingface
+sentence-transformers
