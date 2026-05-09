@@ -2,15 +2,16 @@ from __future__ import annotations
 
 import os
 import sqlite3
-import tempfile
+import io
 from typing import Annotated, Any, Dict, Optional, TypedDict
 
 import requests
 from dotenv import load_dotenv
+from pypdf import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_community.vectorstores import FAISS
+from langchain_core.documents import Document
 from langchain_core.messages import BaseMessage, SystemMessage
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
@@ -44,13 +45,20 @@ def ingest_pdf(file_bytes: bytes, thread_id: str, filename: Optional[str] = None
     if not file_bytes:
         raise ValueError("No bytes received for ingestion.")
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
-        temp_file.write(file_bytes)
-        temp_path = temp_file.name
-
     try:
-        loader = PyPDFLoader(temp_path)
-        docs = loader.load()
+        # FIX: Read the PDF directly from memory to bypass Hugging Face disk restrictions
+        pdf_stream = io.BytesIO(file_bytes)
+        pdf_reader = PdfReader(pdf_stream)
+
+        docs = []
+        for i, page in enumerate(pdf_reader.pages):
+            text = page.extract_text()
+            if text:
+                docs.append(Document(
+                    page_content=text,
+                    metadata={"source": filename or "Uploaded PDF", "page": i}
+                ))
+
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
             chunk_overlap=200,
@@ -62,20 +70,18 @@ def ingest_pdf(file_bytes: bytes, thread_id: str, filename: Optional[str] = None
 
         _THREAD_RETRIEVERS[str(thread_id)] = retriever
         _THREAD_METADATA[str(thread_id)] = {
-            "filename": filename or os.path.basename(temp_path),
+            "filename": filename or "Uploaded PDF",
             "documents": len(docs),
             "chunks": len(chunks),
         }
         return {
-            "filename": filename or os.path.basename(temp_path),
+            "filename": filename or "Uploaded PDF",
             "documents": len(docs),
             "chunks": len(chunks),
         }
-    finally:
-        try:
-            os.remove(temp_path)
-        except OSError:
-            pass
+    except Exception as e:
+        print(f"Error ingesting PDF: {e}")
+        raise e
 
 
 search_tool = DuckDuckGoSearchRun(region="us-en")
