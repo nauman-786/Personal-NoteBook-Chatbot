@@ -5,7 +5,7 @@ import os
 import uuid
 from typing import Optional
 
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, UploadFile, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -34,7 +34,10 @@ NAMES_FILE = "conversation_names.json"
 def load_names() -> dict:
     if os.path.exists(NAMES_FILE):
         with open(NAMES_FILE, "r") as f:
-            return json.load(f)
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                return {}
     return {}
 
 
@@ -43,46 +46,91 @@ def save_names(names: dict):
         json.dump(names, f, indent=2)
 
 
+def is_authorized(thread_id: str, x_user_id: str, names: dict) -> bool:
+    """Helper to check if the current user owns the thread."""
+    info = names.get(thread_id)
+    if isinstance(info, dict):
+        return info.get("user_id") == x_user_id
+    # If it's an old string-based chat from before the update, allow access for now
+    return True
+
+
 @app.get("/api/threads")
-def get_threads():
+def get_threads(x_user_id: Optional[str] = Header(None)):
     names = load_names()
     threads = retrieve_all_threads()
     result = []
     for tid in threads:
-        result.append({
-            "id": str(tid),
-            "name": names.get(str(tid), "New chat"),
-            "has_document": thread_has_document(str(tid)),
-            "document": thread_document_metadata(str(tid)),
-        })
+        tid_str = str(tid)
+        info = names.get(tid_str)
+        
+        # Handle new dictionary format vs old string format
+        if isinstance(info, dict):
+            thread_user_id = info.get("user_id")
+            thread_name = info.get("name", "New chat")
+        else:
+            thread_user_id = None
+            thread_name = info if isinstance(info, str) else "New chat"
+            
+        # Multi-Tenant Filter: Only return threads belonging to THIS user
+        if x_user_id and thread_user_id == x_user_id:
+            result.append({
+                "id": tid_str,
+                "name": thread_name,
+                "has_document": thread_has_document(tid_str),
+                "document": thread_document_metadata(tid_str),
+            })
+            
     return {"threads": result[::-1]}
 
 
 @app.post("/api/threads")
-def create_thread():
+def create_thread(x_user_id: Optional[str] = Header(None)):
     thread_id = str(uuid.uuid4())
+    names = load_names()
+    # Save the thread name AND the user_id that owns it
+    names[thread_id] = {
+        "name": "New chat",
+        "user_id": x_user_id
+    }
+    save_names(names)
     return {"id": thread_id}
 
 
 @app.delete("/api/threads/{thread_id}")
-def delete_thread(thread_id: str):
+def delete_thread(thread_id: str, x_user_id: Optional[str] = Header(None)):
     names = load_names()
     if thread_id in names:
+        if not is_authorized(thread_id, x_user_id, names):
+            raise HTTPException(status_code=403, detail="Not authorized to delete this thread")
         del names[thread_id]
         save_names(names)
     return {"ok": True}
 
 
 @app.patch("/api/threads/{thread_id}/name")
-def rename_thread(thread_id: str, body: dict):
+def rename_thread(thread_id: str, body: dict, x_user_id: Optional[str] = Header(None)):
     names = load_names()
-    names[thread_id] = body.get("name", "New chat")
-    save_names(names)
+    if thread_id in names:
+        if not is_authorized(thread_id, x_user_id, names):
+            raise HTTPException(status_code=403, detail="Not authorized to rename this thread")
+            
+        info = names[thread_id]
+        if isinstance(info, dict):
+            info["name"] = body.get("name", "New chat")
+        else:
+            names[thread_id] = {"name": body.get("name", "New chat"), "user_id": x_user_id}
+        save_names(names)
     return {"ok": True}
 
 
 @app.get("/api/threads/{thread_id}/messages")
-def get_messages(thread_id: str):
+def get_messages(thread_id: str, x_user_id: Optional[str] = Header(None)):
+    names = load_names()
+    # Prevent users from guessing thread IDs and reading others' messages
+    if thread_id in names and not is_authorized(thread_id, x_user_id, names):
+        raise HTTPException(status_code=403, detail="Not authorized to view this thread")
+
     state = chatbot.get_state(config={"configurable": {"thread_id": thread_id}})
     messages = state.values.get("messages", [])
     result = []
@@ -95,21 +143,34 @@ def get_messages(thread_id: str):
 
 
 @app.post("/api/threads/{thread_id}/upload")
-async def upload_pdf(thread_id: str, file: UploadFile = File(...)):
+async def upload_pdf(thread_id: str, file: UploadFile = File(...), x_user_id: Optional[str] = Header(None)):
+    names = load_names()
+    if thread_id in names and not is_authorized(thread_id, x_user_id, names):
+        raise HTTPException(status_code=403, detail="Not authorized to upload to this thread")
+
     data = await file.read()
     summary = ingest_pdf(data, thread_id=thread_id, filename=file.filename)
     return summary
 
 
 @app.post("/api/threads/{thread_id}/chat")
-async def chat(thread_id: str, body: dict):
+async def chat(thread_id: str, body: dict, x_user_id: Optional[str] = Header(None)):
     user_input = body.get("message", "")
-
     names = load_names()
-    if thread_id not in names:
+    
+    # Secure the chat endpoint
+    if thread_id in names and not is_authorized(thread_id, x_user_id, names):
+        raise HTTPException(status_code=403, detail="Not authorized to chat in this thread")
+
+    # Name generation for new threads
+    info = names.get(thread_id)
+    if not info or (isinstance(info, dict) and info.get("name") in ["New chat", "New conversation"]):
         words = user_input.strip().split()
         name = " ".join(words[:5]).capitalize() or "New chat"
-        names[thread_id] = name
+        names[thread_id] = {
+            "name": name,
+            "user_id": x_user_id
+        }
         save_names(names)
 
     config = {
