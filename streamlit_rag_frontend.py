@@ -1,3 +1,4 @@
+import os
 import uuid
 
 import streamlit as st
@@ -12,6 +13,7 @@ from langraph_rag_backend import (
 )
 
 st.set_page_config(page_title="LangGraph PDF Chat", page_icon="📄", layout="centered")
+NEW_CHAT_TITLE = "New Chat"
 
 st.markdown(
     """
@@ -78,6 +80,8 @@ def generate_thread_id():
 
 
 def generate_chat_name(user_message: str) -> str:
+    if not os.getenv("OPENAI_API_KEY"):
+        return NEW_CHAT_TITLE
     try:
         model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
         response = model.invoke(
@@ -92,23 +96,23 @@ def generate_chat_name(user_message: str) -> str:
             ]
         )
         title = (response.content or "").strip()
-        return title or "New Chat"
+        return title or NEW_CHAT_TITLE
     except Exception:
-        return "New Chat"
+        return NEW_CHAT_TITLE
 
 
 def reset_chat():
     thread_id = generate_thread_id()
     st.session_state["thread_id"] = thread_id
     add_thread(thread_id)
-    st.session_state["chat_names"].setdefault(str(thread_id), "New Chat")
+    st.session_state["chat_names"].setdefault(str(thread_id), NEW_CHAT_TITLE)
     st.session_state["message_history"] = []
 
 
 def add_thread(thread_id):
     if thread_id not in st.session_state["chat_threads"]:
         st.session_state["chat_threads"].append(thread_id)
-    st.session_state["chat_names"].setdefault(str(thread_id), "New Chat")
+    st.session_state["chat_names"].setdefault(str(thread_id), NEW_CHAT_TITLE)
 
 
 def load_conversation(thread_id):
@@ -140,7 +144,7 @@ threads = st.session_state["chat_threads"][::-1]
 selected_thread = None
 
 st.sidebar.title("LangGraph PDF Chatbot")
-st.sidebar.markdown(f"**Current Chat:** {st.session_state['chat_names'].get(thread_key, 'New Chat')}")
+st.sidebar.markdown(f"**Current Chat:** {st.session_state['chat_names'].get(thread_key, NEW_CHAT_TITLE)}")
 st.sidebar.caption(f"`{thread_key}`")
 
 if st.sidebar.button("New Chat", use_container_width=True):
@@ -171,7 +175,8 @@ if not threads:
     st.sidebar.write("No past conversations yet.")
 else:
     for thread_id in threads:
-        name = st.session_state["chat_names"].get(str(thread_id), "New Chat")
+        thread_id_key = str(thread_id)
+        name = st.session_state["chat_names"].get(thread_id_key, NEW_CHAT_TITLE)
         search_query = st.session_state.get("search_query", "").strip().lower()
         if search_query and search_query not in name.lower():
             continue
@@ -182,18 +187,18 @@ else:
                 selected_thread = thread_id
         with row_col2:
             if st.button("✏️", key=f"rename-thread-{thread_id}"):
-                st.session_state["renaming_thread"] = str(thread_id)
+                st.session_state["renaming_thread"] = thread_id_key
                 st.rerun()
         with row_col3:
             if st.button("🗑️", key=f"delete-thread-{thread_id}"):
-                st.session_state["chat_threads"] = [tid for tid in st.session_state["chat_threads"] if str(tid) != str(thread_id)]
-                st.session_state["chat_names"].pop(str(thread_id), None)
-                st.session_state["ingested_docs"].pop(str(thread_id), None)
-                if str(st.session_state["thread_id"]) == str(thread_id):
+                st.session_state["chat_threads"] = [tid for tid in st.session_state["chat_threads"] if str(tid) != thread_id_key]
+                st.session_state["chat_names"].pop(thread_id_key, None)
+                st.session_state["ingested_docs"].pop(thread_id_key, None)
+                if str(st.session_state["thread_id"]) == thread_id_key:
                     reset_chat()
                 st.rerun()
 
-        if st.session_state.get("renaming_thread") == str(thread_id):
+        if st.session_state.get("renaming_thread") == thread_id_key:
             rename_key = f"rename-input-{thread_id}"
             st.sidebar.text_input("Rename chat", value=name, key=rename_key)
             save_col, cancel_col = st.sidebar.columns([1, 1])
@@ -201,7 +206,7 @@ else:
                 if st.button("Save", key=f"save-rename-{thread_id}", use_container_width=True):
                     new_name = st.session_state.get(rename_key, "").strip()
                     if new_name:
-                        st.session_state["chat_names"][str(thread_id)] = new_name
+                        st.session_state["chat_names"][thread_id_key] = new_name
                     st.session_state["renaming_thread"] = None
                     st.rerun()
             with cancel_col:
@@ -222,9 +227,9 @@ for message in st.session_state["message_history"]:
 user_input = st.chat_input("Ask about your document or use tools")
 
 if user_input:
-    is_first_user_message = not any(msg["role"] == "user" for msg in st.session_state["message_history"])
+    has_no_prior_user_messages = not any(msg["role"] == "user" for msg in st.session_state["message_history"])
     st.session_state["message_history"].append({"role": "user", "content": user_input})
-    if is_first_user_message and st.session_state["chat_names"].get(thread_key, "New Chat") == "New Chat":
+    if has_no_prior_user_messages and st.session_state["chat_names"].get(thread_key, NEW_CHAT_TITLE) == NEW_CHAT_TITLE:
         st.session_state["chat_names"][thread_key] = generate_chat_name(user_input)
     with st.chat_message("user"):
         st.markdown(user_input)
@@ -236,6 +241,8 @@ if user_input:
     }
 
     status_holder = {"box": None}
+    st.session_state["is_generating"] = True
+    st.session_state["stop_requested"] = False
 
     def ai_only_stream():
         for chunk, _ in chatbot.stream(
@@ -254,8 +261,6 @@ if user_input:
             if isinstance(chunk, AIMessage):
                 yield chunk.content
 
-    st.session_state["is_generating"] = True
-    st.session_state["stop_requested"] = False
     with st.chat_message("assistant"):
         ai_message = st.write_stream(ai_only_stream())
     st.session_state["is_generating"] = False
